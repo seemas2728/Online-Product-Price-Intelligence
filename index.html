@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Online Price Intelligence - Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        input[type="file"] {
+            margin: 10px 0;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .result-card {
+            border: 2px solid #ccc;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background: #f9f9f9;
+            transition: 0.3s;
+        }
+
+        .result-card:hover {
+            transform: scale(1.02);
+        }
+
+        .best-deal {
+            border-color: #28a745;
+            background-color: #eaffea;
+        }
+
+        .badge {
+            background: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: inline-block;
+        }
+
+        .btn-view-deal {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .btn-view-deal:hover {
+            background: #0056b3;
+        }
+
+        #summary {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>Upload Product Image</h2>
+        <div class="upload-section">
+            <input type="file" id="imageInput" accept="image/*" onchange="previewImage()">
+            <br><br>
+            <img id="preview" width="200" style="display:none; border:1px solid #ddd; border-radius: 8px;">
+            <br><br>
+            <button onclick="uploadImage()">Upload Image</button>
+            <p id="status" style="font-weight: bold; color: #555;"></p>
+            <h3 id="result" style="color: #007bff;"></h3>
+        </div>
+
+        <hr style="border:1px solid #eee; margin: 30px 0;">
+
+        <h2>Price Comparison Engine</h2>
+        <div id="priceResults">Upload an image to start comparing and find the best price!</div>
+        <div id="summary" style="display:none;"></div>
+    </div>
+
+    <script>
+        function previewImage() {
+            const file = document.getElementById("imageInput").files[0];
+            const preview = document.getElementById("preview");
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = "block";
+            }
+        }
+
+        async function uploadImage() {
+            const fileInput = document.getElementById("imageInput");
+            const file = fileInput.files[0];
+
+            if (!file) {
+                document.getElementById("status").innerText = "Error: Please select a file!";
+                document.getElementById("status").style.color = "red";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("image", file);
+
+            document.getElementById("status").innerText = "Uploading & Detecting Product... 🚀";
+            document.getElementById("status").style.color = "#007bff";
+            document.getElementById("result").innerText = "";
+            document.getElementById("priceResults").innerHTML = "";
+            document.getElementById("summary").style.display = "none";
+
+            try {
+                const response = await fetch("/api/upload-image", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("API Failed");
+                const data = await response.json();
+
+                document.getElementById("status").innerText = "Upload & Detection Success! ✅";
+                document.getElementById("status").style.color = "green";
+                document.getElementById("result").innerText = "Detected Product: " + data.product + " (Confidence: " + data.confidence + ")";
+
+                fetchPrices(data.product);
+
+            } catch (error) {
+                document.getElementById("status").innerText = "Upload Failed: API Error";
+                document.getElementById("status").style.color = "red";
+                console.error("Upload Error:", error);
+            }
+        }
+
+        async function fetchPrices(productName) {
+            document.getElementById("priceResults").innerHTML = "<h3 style='color: orange; font-weight: bold;'>⏳ Fetching Prices from eBay & Walmart...</h3>";
+
+            try {
+                const response = await fetch("/api/compare-prices?product=" + encodeURIComponent(productName));
+                if (!response.ok) throw new Error("Scraping API Failed");
+                const data = await response.json();
+
+                if (!data.results || data.results.length === 0) {
+                    document.getElementById("priceResults").innerHTML = "<p style='color:red;'>No results found for this product.</p>";
+                    return;
+                }
+
+                let html = "";
+                const lowest = parseFloat(data.summary.lowest_price);
+
+                data.results.forEach(item => {
+                    const priceVal = parseFloat(item.price);
+                    const isBest = priceVal === lowest;
+
+                    const imageUrl = item.image && item.image !== ""
+                        ? item.image
+                        : "https://via.placeholder.com/120?text=No+Image";
+
+                    const cardClass = isBest ? "result-card best-deal" : "result-card";
+                    const badgeHtml = isBest ? '<span class="badge">🔥 BEST PRICE</span><br>' : '';
+
+                    html += `
+                <div class="${cardClass}">
+                    <img src="${imageUrl}" width="120" style="border:1px solid #ddd; border-radius:5px; align-self: flex-start; margin-top: 5px;">
+                    <div>
+                        <strong style="font-size:18px;">${item.product_name}</strong><br>
+                        Store: <b>${item.store}</b><br>
+                        Price: <b style="font-size: 16px;">$${item.price}</b><br>
+                        ${badgeHtml}
+                        <a href="${item.product_url}" target="_blank" class="btn-view-deal">View Deal</a>
+                    </div>
+                </div>
+            `;
+                });
+
+                document.getElementById("priceResults").innerHTML = html;
+
+                const summaryDiv = document.getElementById("summary");
+                summaryDiv.style.display = "block";
+                summaryDiv.innerHTML = `
+            <strong>Lowest Price:</strong> $${data.summary.lowest_price} | 
+            <strong>Highest Price:</strong> $${data.summary.highest_price} | 
+            <strong>Average Price:</strong> $${data.summary.average_price}
+        `;
+
+            } catch (error) {
+                document.getElementById("priceResults").innerHTML = "<p style='color:red;'>Failed to fetch prices. A scraping error occurred.</p>";
+                console.error("Scraping Error:", error);
+            }
+        }
+    </script>
+</body>
+
+</html>
