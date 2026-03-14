@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Online Price Intelligence</title>
+<link rel="stylesheet" href="style.css">
+<!-- FontAwesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Chart.js for Price Visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+<div class="dashboard-wrapper">
+    <div class="dashboard-header">
+        <div class="header-logo">
+            <i class="fas fa-bolt header-icon" style="color:var(--warning-color)"></i> 
+            <h2>Price<span class="highlight-text">Intelligence</span></h2>
+        </div>
+        <div class="header-user">
+            <button id="themeToggleBtn" class="btn-icon" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+            <span>Welcome, <strong id="usernameDisplay">User</strong>!</span>
+            <button id="logoutBtn" class="btn-outline"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+    </div>
+
+    <div class="dashboard-layout">
+        <div class="dashboard-main">
+            <!-- Search / Upload Section -->
+            <div class="card mb-20 chase-panel">
+                <h3 class="panel-title"><i class="fas fa-search-location"></i> Target Product</h3>
+                <div class="manual-search">
+                    <input type="text" id="manualSearchInput" placeholder="Enter product name (e.g. Sony WH-1000XM5)">
+                    <button id="manualSearchBtn" class="btn-primary"><i class="fas fa-crosshairs"></i> Locate</button>
+                </div>
+                <div class="divider">
+                    <span>OR AUTO-DETECT VIA IMAGE</span>
+                </div>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                    <div id="uploadText">
+                        <i class="fas fa-camera-retro"></i>
+                        <p>Drop Evidence Here<br><small>Click to browse</small></p>
+                    </div>
+                    <img id="imagePreview" alt="Image Preview" style="display:none;">
+                </div>
+                <button id="uploadBtn" class="btn-primary" style="margin-top:20px; display:none;">
+                    <i class="fas fa-fingerprint"></i> Analyze & Extract
+                </button>
+                <div id="loadingIndicator" class="loading-state" style="display:none;">
+                    <div class="pulse-ring"></div>
+                    <p id="loadingMessage">Engaging neural network...</p>
+                </div>
+            </div>
+
+            <!-- Feature 4: Smart Product Insight Section -->
+            <div id="predictionCard" class="card mb-20 insight-card" style="display:none;">
+                <h3 class="panel-title"><i class="fas fa-brain"></i> AI Intelligence Report</h3>
+                <div class="prediction-info">
+                    <div class="pred-item large">
+                        <span class="pred-label">Target Identified:</span>
+                        <span class="pred-value highlight-text" id="predProduct">N/A</span>
+                    </div>
+                    <div class="pred-item">
+                        <span class="pred-label">Match Confidence:</span>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="predConfidenceBar"></div>
+                        </div>
+                        <span class="pred-value" id="predConfidence">0%</span>
+                    </div>
+                    <div class="pred-item" style="margin-top:10px;">
+                        <span class="pred-label">System Insight:</span>
+                        <span class="pred-value text-muted" id="predInsight">Awaiting data...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="resultsSection" style="display:none;">
+                <!-- Feature 5 & 4 Actions -->
+                <div class="action-bar mb-20">
+                    <button id="addToWatchlistBtn" class="btn-warning"><i class="fas fa-eye"></i> Add to Watchlist</button>
+                    <button id="exportCsvBtn" class="btn-success"><i class="fas fa-file-export"></i> Export Report</button>
+                </div>
+
+                <!-- Feature 1: Best Deal Recommendation Engine -->
+                <div id="bestDealCard" class="card mb-20 best-deal-highlight">
+                    <div class="deal-badge"><i class="fas fa-trophy"></i> Prime Target</div>
+                    <div class="deal-content">
+                        <div class="deal-store" id="bestDealStore">Store</div>
+                        <div class="deal-price" id="bestDealPrice">₹0.00</div>
+                        <div class="deal-savings" id="bestDealSavings">Save up to ₹0.00 compared to highest</div>
+                        <a href="#" id="bestDealUrl" target="_blank" class="btn-deal-action"><i class="fas fa-bolt"></i> Secure Deal</a>
+                    </div>
+                    <div class="deal-sidebar">
+                        <div class="metric-mini"><span>Average</span><strong id="metricAverage">₹0.00</strong></div>
+                        <div class="metric-mini"><span>Highest</span><strong id="metricHighest">₹0.00</strong></div>
+                    </div>
+                </div>
+
+                <!-- Feature 2: Price Battle Comparison Section -->
+                <div id="comparisonCard" class="card mb-20">
+                    <div class="card-header-flex">
+                        <h3 class="panel-title"><i class="fas fa-fist-raised"></i> Platform Face-Off</h3>
+                        <div class="filters">
+                            <select id="sortSelect" style="padding:6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color);">
+                                <option value="asc">Tactical: Lowest First</option>
+                                <option value="desc">Tactical: Highest First</option>
+                            </select>
+                            <select id="filterSelect" style="padding:6px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color);">
+                                <option value="all">All Arenas</option>
+                                <option value="amazon">Amazon India</option>
+                                <option value="flipkart">Flipkart</option>
+                                <option value="croma">Croma</option>
+                                <option value="reliance">Reliance Digital</option>
+                                <option value="tata">Tata Cliq</option>
+                                <option value="ebay">eBay</option>
+                                <option value="walmart">Walmart</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="priceResults" class="battle-grid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Feature 3: Trends & Chart -->
+                <div class="split-cards mb-20">
+                    <div id="chartCard" class="card">
+                        <h3 class="panel-title"><i class="fas fa-chart-area"></i> Price Distribution</h3>
+                        <div style="position: relative; height:220px; width:100%;">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+                    <div id="trendCard" class="card">
+                        <h3 class="panel-title"><i class="fas fa-history"></i> Historical Pricing Trend</h3>
+                        <div style="position: relative; height:220px; width:100%;">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                        <div id="trendEmpty" class="empty-state" style="display:block; margin-top:50px;">
+                            No historical data found
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-sidebar">
+            <!-- Feature 5: Watchlist Sidebar -->
+            <div class="card sidebar-card mb-20">
+                <h3 class="panel-title"><i class="fas fa-binoculars"></i> Active Watchlist</h3>
+                <ul id="watchlistContainer" class="history-list">
+                    <li class="empty-state" id="emptyWatchlist">No targets monitored.</li>
+                </ul>
+            </div>
+
+            <!-- Recent Intel -->
+            <div class="card sidebar-card history-card">
+                <h3 class="panel-title"><i class="fas fa-satellite-dish"></i> Intel Log</h3>
+                <ul id="historyList" class="history-list">
+                    <li class="empty-state">Awaiting commands.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="script.js"></script>
+</body>
+</html>
